@@ -5,20 +5,16 @@ import express from "express";
 const app = express();
 const server = http.createServer(app);
 
+// **Fix: Ensure correct CORS handling for WebSockets**
 const io = new Server(server, {
   cors: {
     origin: ["http://localhost:5173", "https://letsconvo.netlify.app"],
-    methods: ["GET", "POST"],
-    credentials: true, 
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
   },
 });
 
-
-export function getReceiverSocketId(userId) {
-  return userSocketMap[userId];
-}
-
-// used to store online users
+// Store online users
 const userSocketMap = {}; // {userId: socketId}
 
 io.on("connection", (socket) => {
@@ -27,7 +23,7 @@ io.on("connection", (socket) => {
   const userId = socket.handshake.query.userId;
   if (userId) userSocketMap[userId] = socket.id;
 
-  // io.emit() is used to send events to all the connected clients
+  // Emit online users list
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
   socket.on("disconnect", () => {
@@ -36,5 +32,9 @@ io.on("connection", (socket) => {
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 });
+
+export function getReceiverSocketId(userId) {
+  return userSocketMap[userId];
+}
 
 export { io, app, server };
